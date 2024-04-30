@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bundlephobia/types"
+	types "bundlephobia/types"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +13,7 @@ const (
 	URL = "https://registry.npmjs.org/%s"
 )
 
-func findDependencies(package_ string) *types.Tree {
+func findDependencies(package_ string, cache *map[string]*types.Tree) *types.Tree {
 	dependencyTree := &types.Tree{}
 
 	response, err := http.Get(fmt.Sprintf(URL, package_))
@@ -32,28 +32,34 @@ func findDependencies(package_ string) *types.Tree {
 		panic(err)
 	}
 
+	packageExists := (*cache)[parsedBody.Name]
+	if packageExists != nil {
+		return (*cache)[parsedBody.Name]
+	}
+
 	dependencyTree.Data = parsedBody.Name
 	dependencyTree.Children = []*types.Tree{}
 	for name := range parsedBody.Versions[parsedBody.Tags.Latest].Dependencies {
-		dependencyTree.Children = append(dependencyTree.Children, findDependencies(name))
+		dependencyTree.Children = append(dependencyTree.Children, findDependencies(name, cache))
 	}
 
+	(*cache)[parsedBody.Name] = dependencyTree
 	return dependencyTree
 }
 
-func traverseTree(dependencyTree *types.Tree, level int) {
+func traverseTree(dependencyTree *types.Tree) {
 	if dependencyTree == nil {
 		return
 	}
 
-	fmt.Printf("%d %s\n", level, dependencyTree.Data)
 	for _, child := range dependencyTree.Children {
-		traverseTree(child, level+1)
+		traverseTree(child)
 	}
 }
 
 func main() {
 	package_ := os.Args[1]
-	dependencyTree := findDependencies(package_)
-	traverseTree(dependencyTree, 0)
+	cache := &map[string]*types.Tree{}
+	dependencyTree := findDependencies(package_, cache)
+	traverseTree(dependencyTree)
 }
