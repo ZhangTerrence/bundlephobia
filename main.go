@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	URL = "https://registry.npmjs.org/%s"
+	UrlFormat = "https://registry.npmjs.org/%s"
 )
 
-func findDependencies(package_ string, cache *map[string]*types.Tree) *types.Tree {
-	dependencyTree := &types.Tree{}
+func findDependencies(package_ string, cache *map[string]*types.DependencyTree) *types.DependencyTree {
+	dependencyTree := &types.DependencyTree{}
 
-	response, err := http.Get(fmt.Sprintf(URL, package_))
+	response, err := http.Get(fmt.Sprintf(UrlFormat, package_))
 	if err != nil {
 		panic(err)
 	}
@@ -26,7 +26,7 @@ func findDependencies(package_ string, cache *map[string]*types.Tree) *types.Tre
 		panic(err)
 	}
 
-	var parsedBody types.NodePackage
+	var parsedBody types.Package
 	err = json.Unmarshal(data, &parsedBody)
 	if err != nil {
 		panic(err)
@@ -37,29 +37,29 @@ func findDependencies(package_ string, cache *map[string]*types.Tree) *types.Tre
 		return (*cache)[parsedBody.Name]
 	}
 
-	dependencyTree.Data = parsedBody.Name
-	dependencyTree.Children = []*types.Tree{}
+	dependencyTree.Name = parsedBody.Name
+	dependencyTree.Dependencies = []*types.DependencyTree{}
 	for name := range parsedBody.Versions[parsedBody.Tags.Latest].Dependencies {
-		dependencyTree.Children = append(dependencyTree.Children, findDependencies(name, cache))
+		dependencyTree.Dependencies = append(dependencyTree.Dependencies, findDependencies(name, cache))
 	}
 
 	(*cache)[parsedBody.Name] = dependencyTree
 	return dependencyTree
 }
 
-func traverseTree(dependencyTree *types.Tree) {
+func traverseTree(dependencyTree *types.DependencyTree) {
 	if dependencyTree == nil {
 		return
 	}
 
-	for _, child := range dependencyTree.Children {
-		traverseTree(child)
+	for _, dependency := range dependencyTree.Dependencies {
+		traverseTree(dependency)
 	}
 }
 
 func main() {
 	package_ := os.Args[1]
-	cache := &map[string]*types.Tree{}
+	cache := &map[string]*types.DependencyTree{}
 	dependencyTree := findDependencies(package_, cache)
 	traverseTree(dependencyTree)
 }

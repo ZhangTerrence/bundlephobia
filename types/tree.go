@@ -1,6 +1,6 @@
 package types
 
-type Tree struct {
-	Data     string
-	Children []*Tree
+type DependencyTree struct {
+	Name         string
+	Dependencies []*DependencyTree
 }
