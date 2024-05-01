@@ -174,9 +174,9 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		}
 	}
 
-	if message.Content[:6] == "$stats" {
+	if message.Content[:5] == "$info" {
 		cache := &map[string]*types.DependencyTree{}
-		package_ := message.Content[7:]
+		package_ := message.Content[6:]
 		dependencyTree := findDependencies(package_, cache)
 
 		formatString := "There are a total of %d unique packages installed.\n" +
