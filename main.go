@@ -132,21 +132,12 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		}
 
 		setString := printSet(dependencySet, package_)
-		if len(setString) > 1993 {
-			content := &discordgo.MessageSend{
-				Content: "Tree too long (lol), here's a text file:",
-				File:    &discordgo.File{Name: message.Content[5:] + ".txt", Reader: strings.NewReader(setString)},
-			}
-			_, err := session.ChannelMessageSendComplex(message.ChannelID, content)
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			content := "```\n" + setString + "```"
-			_, err := session.ChannelMessageSend(message.ChannelID, content)
-			if err != nil {
-				panic(err)
-			}
+		content := &discordgo.MessageSend{
+			File: &discordgo.File{Name: message.Content[5:] + ".txt", Reader: strings.NewReader(setString)},
+		}
+		_, err := session.ChannelMessageSendComplex(message.ChannelID, content)
+		if err != nil {
+			panic(err)
 		}
 	}
 
@@ -156,21 +147,12 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		dependencyTree := findDependencies(package_, cache)
 		treeString := printTree(dependencyTree, []bool{})
 
-		if len(treeString) > 1993 {
-			content := &discordgo.MessageSend{
-				Content: "Tree too long (lol), here's a text file:",
-				File:    &discordgo.File{Name: message.Content[6:] + ".txt", Reader: strings.NewReader(treeString)},
-			}
-			_, err := session.ChannelMessageSendComplex(message.ChannelID, content)
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			content := "```\n" + treeString + "```"
-			_, err := session.ChannelMessageSend(message.ChannelID, content)
-			if err != nil {
-				panic(err)
-			}
+		content := &discordgo.MessageSend{
+			File: &discordgo.File{Name: message.Content[6:] + ".txt", Reader: strings.NewReader(treeString)},
+		}
+		_, err := session.ChannelMessageSendComplex(message.ChannelID, content)
+		if err != nil {
+			panic(err)
 		}
 	}
 
@@ -179,8 +161,7 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		package_ := message.Content[6:]
 		dependencyTree := findDependencies(package_, cache)
 
-		formatString := "There are a total of %d unique packages installed.\n" +
-			"Including duplicates, the total number of packages is %d. \n"
+		formatString := "There are a total of %d unique packages.\nThe dependency tree has %d nodes.\n"
 		treeSize := getTreeSize(dependencyTree)
 		setSize := len(*cache)
 
@@ -202,8 +183,7 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 			}
 		}
 
-		formatString := "There are a total of %d unique packages installed.\n" +
-			"Including duplicates, the total number of packages is %d. \n"
+		formatString := "There are a total of %d unique packages.\nThe dependency tree has %d nodes.\n"
 		treeSize := getTreeSize(dependencyTree)
 		setSize := len(*cache)
 

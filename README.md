@@ -1,31 +1,39 @@
 # Bundlephobia
 
-A Discord bot that can generate all the dependencies for a NPM packages. Inspired by the following meme:
+A Discord bot that can find all the dependencies for a given NPM package. Inspired by the following meme:
 
-![black hole](static/lol.png)
+<img alt="node_modules" src="/static/node_modules.png" width="100%">
 
 ## Commands
 
-Prints the set of unique dependencies for specified package.
+Prints all the unique dependencies for a given package.
 
 ```
 $set <PACKAGE>
 ```
 
-Prints the dependency tree for specified package.
+<img alt="node_modules" src="/static/set.png" width="100%">
+
+Prints the dependency tree for a given package.
 
 ```
 $tree <PACKAGE>
 ```
 
-Print the total number of unique and non-unique packages that are related to the specified package.  
+<img alt="node_modules" src="/static/tree.png" width="100%">
+
+Print the total number of unique dependencies for a given package as well as the size of its dependency tree. 
 
 ```
 $info <PACKAGE>
 ```
+
+<img alt="node_modules" src="/static/info.png" width="100%">
 
 Prints all of the above.
 
 ```
 $all <PACKAGE>
 ```
+
+<img alt="node_modules" src="/static/all.png" width="100%">
