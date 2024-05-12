@@ -7,6 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,18 +20,26 @@ func findDependencies(package_ string, cache *map[string]*types.DependencyTree) 
 
 	response, err := http.Get(fmt.Sprintf("https://registry.npmjs.org/%s", package_))
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
+	}
+
+	if response.StatusCode != 200 {
+		return nil
 	}
 
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 
 	var parsedBody types.Package
 	err = json.Unmarshal(data, &parsedBody)
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
+	}
+
+	if parsedBody.Name == "" {
+		return nil
 	}
 
 	packageExists := (*cache)[parsedBody.Name]
@@ -120,11 +129,25 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		return
 	}
 
+	if len(message.Content) < 5 {
+		return
+	}
+
 	if message.Content[:4] == "$set" {
 		cache := &map[string]*types.DependencyTree{}
 		package_ := message.Content[5:]
-		findDependencies(package_, cache)
+		dependencyTree := findDependencies(package_, cache)
+
+		if dependencyTree == nil || len(*cache) == 0 {
+			_, err := session.ChannelMessageSend(message.ChannelID, "Unable to find package.")
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			return
+		}
+
 		dependencySet := make([]string, 0, len(*cache))
+
 		for name := range *cache {
 			if name != package_ {
 				dependencySet = append(dependencySet, name)
@@ -137,7 +160,7 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		}
 		_, err := session.ChannelMessageSendComplex(message.ChannelID, content)
 		if err != nil {
-			panic(err)
+			log.Fatal(err.Error())
 		}
 	}
 
@@ -145,6 +168,15 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		cache := &map[string]*types.DependencyTree{}
 		package_ := message.Content[6:]
 		dependencyTree := findDependencies(package_, cache)
+
+		if dependencyTree == nil || len(*cache) == 0 {
+			_, err := session.ChannelMessageSend(message.ChannelID, "Unable to find package.")
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			return
+		}
+
 		treeString := printTree(dependencyTree, []bool{})
 
 		content := &discordgo.MessageSend{
@@ -152,7 +184,7 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		}
 		_, err := session.ChannelMessageSendComplex(message.ChannelID, content)
 		if err != nil {
-			panic(err)
+			log.Fatal(err.Error())
 		}
 	}
 
@@ -161,6 +193,14 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		package_ := message.Content[6:]
 		dependencyTree := findDependencies(package_, cache)
 
+		if dependencyTree == nil || len(*cache) == 0 {
+			_, err := session.ChannelMessageSend(message.ChannelID, "Unable to find package.")
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			return
+		}
+
 		formatString := "There are a total of %d unique packages.\nThe dependency tree has %d nodes.\n"
 		treeSize := getTreeSize(dependencyTree)
 		setSize := len(*cache)
@@ -168,7 +208,7 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		content := fmt.Sprintf(formatString, setSize, treeSize)
 		_, err := session.ChannelMessageSend(message.ChannelID, content)
 		if err != nil {
-			panic(err)
+			log.Fatal(err.Error())
 		}
 	}
 
@@ -176,6 +216,15 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		cache := &map[string]*types.DependencyTree{}
 		package_ := message.Content[5:]
 		dependencyTree := findDependencies(package_, cache)
+
+		if dependencyTree == nil || len(*cache) == 0 {
+			_, err := session.ChannelMessageSend(message.ChannelID, "Unable to find package.")
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			return
+		}
+
 		dependencySet := make([]string, 0, len(*cache))
 		for name := range *cache {
 			if name != package_ {
@@ -197,7 +246,7 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 		}
 		_, err := session.ChannelMessageSendComplex(message.ChannelID, content)
 		if err != nil {
-			panic(err)
+			log.Fatal(err.Error())
 		}
 	}
 }
@@ -205,12 +254,12 @@ func messageListener(session *discordgo.Session, message *discordgo.MessageCreat
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 
 	session, err := discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 
 	session.AddHandler(messageListener)
@@ -219,7 +268,7 @@ func main() {
 
 	err = session.Open()
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 
 	sc := make(chan os.Signal, 1)
@@ -227,6 +276,6 @@ func main() {
 	<-sc
 	err = session.Close()
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 }
